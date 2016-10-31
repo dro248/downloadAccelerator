@@ -100,7 +100,7 @@ except:
 
 #get filename given url
 def getFilename(url):
-    filename = url.split('/')[-2] if (url.split('/')[-1] == "") else url.split('/')[-1]
+    filename = "index.html" if (url.split('/')[-1] == "") else url.split('/')[-1]
     return filename
 
 #####################################################
