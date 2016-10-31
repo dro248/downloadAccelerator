@@ -4,7 +4,7 @@ import requests
 import argparse
 import sys
 import threading
-
+import time
 
 ####################
 # SharedList Class #
@@ -28,13 +28,10 @@ class SharedList:
         with open(filename, 'wb') as f:
             for item in self.list:
                 f.write(item[1])
-        # print totalFile
-
 
 ####################
 # Downloader Class #
 ####################
-
 class Downloader(threading.Thread):
     """ A thread that downloads a part of a file """
     def __init__(self, startByte, endByte, url, sharedList):
@@ -50,17 +47,9 @@ class Downloader(threading.Thread):
        if str(response.status_code)[0] == '2':
         self.sharedList.add([self.startByte, response.content])
 
-
-
-
 ################
 # arg checking #
 ################
-
-# NUM_OF_THREADS = 1
-# URL = ""
-# CONTENT_LENGTH = 0
-
 usage = "Usage: downloadAccelerator.py [-n threads] url"
 
 parser = argparse.ArgumentParser()
@@ -68,11 +57,9 @@ parser.add_argument('-n', '--threads', type=int, action='store', help='Specify t
 parser.add_argument("url")
 args = parser.parse_args()
 
-# CHECK: url is valid
 def validate_url(test_url):
     try:
         response = requests.head(test_url, headers={'Accept-Encoding':'identity'})
-        # CONTENT_LENGTH = int(response.headers['Content-Length'])
         if str(response.status_code)[0] == "4" or str(response.status_code)[0] == "5":
             raise Exception()
         return test_url
@@ -82,51 +69,25 @@ def validate_url(test_url):
         print usage
         exit()
 
-
-
-def check_positive(value):
+def valid_num_threads(value):
     if value <=0:
         print "%s is an invalid positive int value" % value
         exit()
     return value
 
-
 # Important Variables
 URL = validate_url(args.url)
-NUM_OF_THREADS = check_positive(args.threads)
+NUM_OF_THREADS = valid_num_threads(args.threads)
 CONTENT_LENGTH = int(requests.head(URL, headers={'Accept-Encoding':'identity'}).headers['Content-Length'])
 
-print "url:", URL
-print "threads:", NUM_OF_THREADS
-print "Content-Length", CONTENT_LENGTH
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# print "url:", URL
+# print "threads:", NUM_OF_THREADS
+# print "Content-Length", CONTENT_LENGTH
 
 #get filename given url
 def getFilename(url):
     filename = "index.html" if (url.split('/')[-1] == "") else url.split('/')[-1]
     return filename
-
-#####################################################
-
-
 
 ########################
 # threaded downloading #
@@ -135,9 +96,9 @@ chunkSize = CONTENT_LENGTH / NUM_OF_THREADS
 startByte = 0
 endByte = chunkSize
 sl = SharedList()
-
 threads = []
 
+# setup threads
 for i in range(0, NUM_OF_THREADS):
     d = Downloader(startByte, endByte, URL, sl)
     threads.append(d)
@@ -151,11 +112,17 @@ for i in range(0, NUM_OF_THREADS):
     else:
         endByte += chunkSize
 
+START_TIME = time.time()
+# run threads
 for t in threads:
     t.start()
 
 for t in threads:
     t.join()
 
+END_TIME = time.time()
+TIME_ELAPSED = END_TIME - START_TIME
 # write SharedList to file
 sl.writeToFile(getFilename(URL))
+
+print "URL:",URL, "THREADS:",NUM_OF_THREADS, "BYTES:",CONTENT_LENGTH, "SECONDS:",TIME_ELAPSED
