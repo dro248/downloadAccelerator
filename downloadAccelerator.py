@@ -6,6 +6,7 @@ import sys
 import threading
 import codecs
 
+
 ####################
 # SharedList Class #
 ####################
@@ -24,12 +25,14 @@ class SharedList:
 
     def writeToFile(self, filename):
         self.list.sort()
-        totalFile = ""
-        for item in self.list:
-            totalFile += item[1]
+        # totalFile = ""
+        # for item in self.list:
+        #     totalFile += item[1]
 
-        with codecs.open(filename, 'w', encoding='utf-8') as out:
-            out.write(totalFile)
+        with codecs.open(filename, 'wb', "utf-8-sig") as f:
+            for item in self.list:
+                f.write(item[1])
+        # print totalFile
 
 
 ####################
@@ -59,7 +62,7 @@ class Downloader(threading.Thread):
 ################
 
 # Important Variables
-NUM_OF_THREADS = 0
+NUM_OF_THREADS = 1
 URL = ""
 CONTENT_LENGTH = 0
 
@@ -133,5 +136,5 @@ for t in threads:
 for t in threads:
     t.join()
 
-#
+# write SharedList to file
 sl.writeToFile(getFilename(URL))
