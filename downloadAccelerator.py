@@ -23,15 +23,13 @@ class SharedList:
         self.sem.release()
 
     def writeToFile(self, filename):
-        sorted(self.list, key=lambda l:l[1])
-        # print self.list
+        self.list.sort()
         totalFile = ""
         for item in self.list:
-            totalFile += item[0]
+            totalFile += item[1]
 
         with codecs.open(filename, 'w', encoding='utf-8') as out:
             out.write(totalFile)
-        # print totalFile
 
 
 ####################
@@ -51,7 +49,7 @@ class Downloader(threading.Thread):
        rangeBody = 'bytes={self.startByte}-{self.endByte}'.format(**locals())
        response = requests.get(self.url, headers={ 'Range': rangeBody, 'Accept-Encoding': 'identity'})
        if str(response.status_code)[0] == '2':
-        self.sharedList.add([response.text, self.startByte])
+        self.sharedList.add([self.startByte, response.text])
 
 
 
@@ -100,7 +98,6 @@ except:
 #get filename given url
 def getFilename(url):
     filename = url.split('/')[-2] if (url.split('/')[-1] == "") else url.split('/')[-1]
-    # print "filename:", filename
     return filename
 
 #####################################################
