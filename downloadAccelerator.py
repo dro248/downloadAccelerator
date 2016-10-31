@@ -4,6 +4,7 @@ import requests
 import argparse
 import sys
 import threading
+import codecs
 
 ####################
 # SharedList Class #
@@ -21,9 +22,17 @@ class SharedList:
         self.list.append(item)
         self.sem.release()
 
-    def writeToFile(self):
+    def writeToFile(self, filename):
         sorted(self.list, key=lambda l:l[1])
-        print self.list
+        # print self.list
+        totalFile = ""
+        for item in self.list:
+            totalFile += item[0]
+
+        with codecs.open(filename, 'w', encoding='utf-8') as out:
+            out.write(totalFile)
+        # print totalFile
+
 
 ####################
 # Downloader Class #
@@ -52,9 +61,9 @@ class Downloader(threading.Thread):
 ################
 
 # Important Variables
-numThreads = 0
-url = ""
-contentLength = 0
+NUM_OF_THREADS = 0
+URL = ""
+CONTENT_LENGTH = 0
 
 usage = "Usage: downloadAccelerator.py [-n threads] url"
 
@@ -65,8 +74,8 @@ if len(sys.argv) < 3:
 
 # CHECK: n is a pos int
 try:
-    numThreads = int(sys.argv[1])
-    if numThreads < 1:
+    NUM_OF_THREADS = int(sys.argv[1])
+    if NUM_OF_THREADS < 1:
 	raise Exception()
 except Exception:
     print "Arg Error: n must be a positive integer"
@@ -74,12 +83,12 @@ except Exception:
     print usage
     exit()
 
-url = sys.argv[2]
+URL = sys.argv[2]
 
 # CHECK: url is valid
 try:
-    response = requests.head(url, headers={'Accept-Encoding':'identity'})
-    contentLength = int(response.headers['Content-Length'])
+    response = requests.head(URL, headers={'Accept-Encoding':'identity'})
+    CONTENT_LENGTH = int(response.headers['Content-Length'])
     if str(response.status_code)[0] == "4" or str(response.status_code)[0] == "5":
 	raise Exception()
 except:
@@ -88,7 +97,11 @@ except:
     print usage
     exit()
 
-
+#get filename given url
+def getFilename(url):
+    filename = url.split('/')[-2] if (url.split('/')[-1] == "") else url.split('/')[-1]
+    # print "filename:", filename
+    return filename
 
 #####################################################
 
@@ -97,23 +110,23 @@ except:
 ########################
 # threaded downloading #
 ########################
-chunkSize = contentLength / numThreads
+chunkSize = CONTENT_LENGTH / NUM_OF_THREADS
 startByte = 0
 endByte = chunkSize
 sl = SharedList()
 
 threads = []
 
-for i in range(0, numThreads):
-    d = Downloader(startByte, endByte, url, sl)
+for i in range(0, NUM_OF_THREADS):
+    d = Downloader(startByte, endByte, URL, sl)
     threads.append(d)
 
     # increment "startByte" and "endByte"
     startByte = endByte + 1
 
-    if (endByte + 2*chunkSize) > contentLength:
+    if (endByte + 2*chunkSize) > CONTENT_LENGTH:
         # endbyte increments by whatever is left
-        endByte += contentLength - endByte
+        endByte += CONTENT_LENGTH - endByte
     else:
         endByte += chunkSize
 
@@ -124,4 +137,4 @@ for t in threads:
     t.join()
 
 #
-sl.writeToFile()
+sl.writeToFile(getFilename(URL))
