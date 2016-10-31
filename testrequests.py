@@ -1,16 +1,24 @@
-import requests
+#! /usr/bin/env python2
 
-testheader = requests.head("http://cs360.byu.edu", headers={'Accept-Encoding':'identity'})
-print "testheader", testheader.headers
+import argparse
 
-header1 = { 'Range':'bytes=0-500', 'Accept-Encoding':'identity'}
-header2 = { 'Range':'bytes=501-1094', 'Accept-Encoding':'identity'}
+parser = argparse.ArgumentParser()
+parser.add_argument('-n', '--threads', type=int, action='store', help='Specify the number of downloader threads used',default=1)
+# parser.add_argument('-u', '--url', type=str, action='store', help='Specify the URL')
+parser.add_argument("url")
+# parser.add_argument("echo")
+args = parser.parse_args()
+# print args.url
 
-response1 = requests.get("http://cs360.byu.edu", headers=header1)
-response2 = requests.get("http://cs360.byu.edu", headers=header2)
 
-print "response1:"
-print response1.content
-print
-print "response2:"
-print response2.content
+url = args.url
+
+def check_positive(value):
+    if value <=0:
+        print "%s is an invalid positive int value" % value
+        exit()
+    return value
+threads = check_positive(args.threads)
+
+print "url:",url
+print "threads:",threads

@@ -4,7 +4,6 @@ import requests
 import argparse
 import sys
 import threading
-import codecs
 
 
 ####################
@@ -25,11 +24,8 @@ class SharedList:
 
     def writeToFile(self, filename):
         self.list.sort()
-        # totalFile = ""
-        # for item in self.list:
-        #     totalFile += item[1]
 
-        with codecs.open(filename, 'wb', "utf-8-sig") as f:
+        with open(filename, 'wb') as f:
             for item in self.list:
                 f.write(item[1])
         # print totalFile
@@ -52,7 +48,7 @@ class Downloader(threading.Thread):
        rangeBody = 'bytes={self.startByte}-{self.endByte}'.format(**locals())
        response = requests.get(self.url, headers={ 'Range': rangeBody, 'Accept-Encoding': 'identity'})
        if str(response.status_code)[0] == '2':
-        self.sharedList.add([self.startByte, response.text])
+        self.sharedList.add([self.startByte, response.content])
 
 
 
@@ -61,42 +57,67 @@ class Downloader(threading.Thread):
 # arg checking #
 ################
 
-# Important Variables
-NUM_OF_THREADS = 1
-URL = ""
-CONTENT_LENGTH = 0
+# NUM_OF_THREADS = 1
+# URL = ""
+# CONTENT_LENGTH = 0
 
 usage = "Usage: downloadAccelerator.py [-n threads] url"
 
-# CHECK: number of args
-if len(sys.argv) < 3:
-    print usage
-    exit()
-
-# CHECK: n is a pos int
-try:
-    NUM_OF_THREADS = int(sys.argv[1])
-    if NUM_OF_THREADS < 1:
-	raise Exception()
-except Exception:
-    print "Arg Error: n must be a positive integer"
-    print
-    print usage
-    exit()
-
-URL = sys.argv[2]
+parser = argparse.ArgumentParser()
+parser.add_argument('-n', '--threads', type=int, action='store', help='Specify the number of downloader threads used',default=1)
+parser.add_argument("url")
+args = parser.parse_args()
 
 # CHECK: url is valid
-try:
-    response = requests.head(URL, headers={'Accept-Encoding':'identity'})
-    CONTENT_LENGTH = int(response.headers['Content-Length'])
-    if str(response.status_code)[0] == "4" or str(response.status_code)[0] == "5":
-	raise Exception()
-except:
-    print "Arg Error: Invalid URL provided."
-    print
-    print usage
-    exit()
+def validate_url(test_url):
+    try:
+        response = requests.head(test_url, headers={'Accept-Encoding':'identity'})
+        # CONTENT_LENGTH = int(response.headers['Content-Length'])
+        if str(response.status_code)[0] == "4" or str(response.status_code)[0] == "5":
+            raise Exception()
+        return test_url
+    except:
+        print "Arg Error: Invalid URL provided."
+        print
+        print usage
+        exit()
+
+
+
+def check_positive(value):
+    if value <=0:
+        print "%s is an invalid positive int value" % value
+        exit()
+    return value
+
+
+# Important Variables
+URL = validate_url(args.url)
+NUM_OF_THREADS = check_positive(args.threads)
+CONTENT_LENGTH = int(requests.head(URL, headers={'Accept-Encoding':'identity'}).headers['Content-Length'])
+
+print "url:", URL
+print "threads:", NUM_OF_THREADS
+print "Content-Length", CONTENT_LENGTH
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #get filename given url
 def getFilename(url):
